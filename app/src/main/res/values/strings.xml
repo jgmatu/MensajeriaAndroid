@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MessageService</string>
+
+    <string name="activity_groups">MessageService</string>
+    <string name="action_settings">Settings</string>
+
+</resources>
