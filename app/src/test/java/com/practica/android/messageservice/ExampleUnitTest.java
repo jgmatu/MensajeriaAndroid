@@ -1,4 +1,4 @@
-package com.example.javi.messageservice;
+package com.practica.android.messageservice;
 
 import org.junit.Test;
 

@@ -1,14 +1,15 @@
-package com.example.javi.messageservice.views;
+package com.practica.android.messageservice.views;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 
-import com.example.javi.messageservice.R;
+import com.practica.android.messageservice.R;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -16,11 +17,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import com.example.javi.messageservice.entities.Messages;
-
 import java.util.ArrayList;
 import java.util.List;
-//import com.example.javi.messageservice.entities.Group;
 
 
 public class ActivityGroups extends AppCompatActivity {
@@ -68,17 +66,28 @@ public class ActivityGroups extends AppCompatActivity {
 
     private void setViewGroups(List<String> groups) {
         TableLayout tableLayout = findViewById(R.id.table_groups);
+
         TableLayout.LayoutParams rows = new TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, 0,
                 1.0f / (float) groups.size());
 
-        TableRow.LayoutParams imgDesign = new TableRow.LayoutParams(
-                TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT);
-
-        for (String g : groups) {
+        for (String group : groups) {
             TableRow row = new TableRow(this);
-            row.setLayoutParams(rows);
 
+            row.setLayoutParams(rows);
+            row.addView(getButton(group));
+            tableLayout.addView(row);
         }
+    }
+
+    private Button getButton(String group) {
+        Button button = new Button(this);
+        TableRow.LayoutParams buttons = new TableRow.LayoutParams(
+                TableRow.LayoutParams.MATCH_PARENT,
+                TableRow.LayoutParams.MATCH_PARENT);
+
+        button.setLayoutParams(buttons);
+        button.setText(group);
+        return button;
     }
 }

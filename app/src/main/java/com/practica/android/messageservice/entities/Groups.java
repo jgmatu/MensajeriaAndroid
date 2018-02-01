@@ -1,4 +1,4 @@
-package com.example.javi.messageservice.entities;
+package com.practica.android.messageservice.entities;
 
 import java.util.HashMap;
 

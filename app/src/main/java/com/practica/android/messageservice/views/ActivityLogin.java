@@ -1,4 +1,4 @@
-package com.example.javi.messageservice.views;
+package com.practica.android.messageservice.views;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -7,7 +7,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.example.javi.messageservice.R;
+import com.practica.android.messageservice.R;
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.IdpResponse;
 

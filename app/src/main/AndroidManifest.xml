@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.javi.messageservice">
+    package="com.practica.android.messageservice">
 
     <application
         android:allowBackup="true"
@@ -10,7 +10,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".views.ActivityLogin"
+            android:name="com.practica.android.messageservice.views.ActivityLogin"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -21,7 +21,7 @@
         </activity>
 
         <activity
-            android:name=".views.ActivityGroups"
+            android:name="com.practica.android.messageservice.views.ActivityGroups"
             android:label="@string/activity_groups"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -31,7 +31,7 @@
         </activity>
 
         <activity
-            android:name=".views.ActivityMessages"
+            android:name="com.practica.android.messageservice.views.ActivityMessages"
             android:label="@string/activity_groups"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>

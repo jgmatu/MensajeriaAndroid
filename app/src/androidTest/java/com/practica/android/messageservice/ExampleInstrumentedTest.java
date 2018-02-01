@@ -1,4 +1,4 @@
-package com.example.javi.messageservice;
+package com.practica.android.messageservice;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

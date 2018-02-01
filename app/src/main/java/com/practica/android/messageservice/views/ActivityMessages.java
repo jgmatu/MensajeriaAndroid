@@ -1,4 +1,4 @@
-package com.example.javi.messageservice.views;
+package com.practica.android.messageservice.views;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -8,7 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 
-import com.example.javi.messageservice.R;
+import com.practica.android.messageservice.R;
 
 
 public class ActivityMessages extends AppCompatActivity {
