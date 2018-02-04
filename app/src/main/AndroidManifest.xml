@@ -33,7 +33,8 @@
         <activity
             android:name="com.practica.android.messageservice.views.ActivityMessages"
             android:label="@string/activity_groups"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

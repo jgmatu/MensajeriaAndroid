@@ -4,4 +4,6 @@
     <string name="activity_groups">MessageService</string>
     <string name="action_settings">Settings</string>
 
+    <string name="ok">Fire!</string>
+    <string name="cancel">Cancel</string>
 </resources>
