@@ -5,25 +5,26 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-
-import com.practica.android.messageservice.R;
+import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.practica.android.messageservice.R;
+import com.practica.android.messageservice.entities.Group;
+import com.practica.android.messageservice.entities.User;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class ActivityGroups extends AppCompatActivity {
 
@@ -32,23 +33,30 @@ public class ActivityGroups extends AppCompatActivity {
 
     private static final String TAG = ActivityGroups.class.getSimpleName();
 
+    private static final int MAXUSERS = 6;
     private static final float SIZETEXT = 24;
     private static final int HIGHBUTTONS = 240;
     private static final int MARGINROWS = 25;
 
+    private User user;
+    private FirebaseDatabase database = FirebaseDatabase.getInstance();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_groups);
 
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-
         // Set view toolbar...
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        queryFirebaseGroups(database);
+        Bundle loginInfo = getIntent().getExtras();
+        if (loginInfo != null) {
+            String uid = loginInfo.getString(ActivityLogin.UID);
+            String email = loginInfo.getString(ActivityLogin.EMAIL);
+            this.user = new User(email, uid);
+            queryFirebaseGroups();
+        }
     }
 
     @Override
@@ -62,78 +70,134 @@ public class ActivityGroups extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_new_group) {
-            DialogAddGroup dialogAddGroup = new DialogAddGroup(this);
-            dialogAddGroup.show();
+            DialogGroups dialogGroups = new DialogGroups(this, this.user, this.database);
+            dialogGroups.show();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private void queryFirebaseGroups(FirebaseDatabase database) {
-        DatabaseReference groupsRef = database.getReference(PATHGROUPS);
+    private void queryFirebaseGroups() {
+        final DatabaseReference groupsRef = database.getReference(PATHGROUPS);
 
-        ValueEventListener postListener = new ValueEventListener() {
+        ValueEventListener groupsListener = new ValueEventListener() {
+
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                ArrayList<String> groups = new ArrayList<>();
+                ArrayList<Group> groups = new ArrayList<>();
 
-                for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
-                    groups.add(postSnapshot.getKey());
+                for (DataSnapshot groupSnapshot : dataSnapshot.getChildren()) {
+                    Group group = groupSnapshot.getValue(Group.class);
+                    groups.add(group);
                 }
                 setViewGroups(groups);
             }
+
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.e(TAG, "loadPost:onCancelled", databaseError.toException());
+                ;
             }
         };
-        groupsRef.addValueEventListener(postListener);
+        groupsRef.addValueEventListener(groupsListener);
     }
 
-    private void setViewGroups(List<String> groups) {
+    private void setViewGroups(List<Group> groups) {
         TableLayout tableLayout = findViewById(R.id.table_groups);
         TableLayout.LayoutParams rows = new TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, 0,
                 1.0f / (float) groups.size());
-
+        
         rows.setMargins(MARGINROWS, MARGINROWS, MARGINROWS, MARGINROWS);
         tableLayout.removeAllViews();
-        for (String group : groups) {
+        for (Group group : groups) {
             TableRow row = new TableRow(this);
 
             row.setLayoutParams(rows);
-            row.addView(getButton(group));
+            row.addView(getGroupButton(group));
+            row.addView(getRegisterButton(group));
             tableLayout.addView(row);
         }
     }
 
-    private Button getButton(String group) {
+    private Button getGroupButton(Group group) {
         Button button = new Button(this);
-        TableRow.LayoutParams buttons = new TableRow.LayoutParams(
-                TableRow.LayoutParams.MATCH_PARENT, HIGHBUTTONS, 1);
+        TableRow.LayoutParams paramsButtonGroup = new TableRow.LayoutParams(
+                0, HIGHBUTTONS, 0.67f);
 
-        button.setLayoutParams(buttons);
-        button.setText(group);
+        button.setLayoutParams(paramsButtonGroup);
+        button.setText(group.getName());
         button.setTextSize(SIZETEXT);
         button.setOnClickListener(new GroupButton(group));
         return button;
     }
 
-    private class GroupButton implements View.OnClickListener {
-        private String group;
+    private ImageButton getRegisterButton(Group group) {
+        ImageButton button = new ImageButton(this);
+        TableRow.LayoutParams paramsButtonRegister = new TableRow.LayoutParams(0, HIGHBUTTONS, 0.33f);
 
-        GroupButton(String group) {
+        button.setLayoutParams(paramsButtonRegister);
+        button.setOnClickListener(new GroupAction(group));
+
+        if (group.isRegister(this.user.getUid())) {
+            button.setImageDrawable(getResources().getDrawable(R.mipmap.exit_group));
+        } else {
+            button.setImageDrawable(getResources().getDrawable(R.mipmap.register_user_group));
+        }
+        return button;
+    }
+
+    private class GroupButton implements View.OnClickListener {
+        private Group group;
+
+        GroupButton(Group group) {
             this.group = group;
         }
 
         @Override
         public void onClick(View view) {
+            if (!this.group.isRegister(ActivityGroups.this.user.getUid())) {
+                showMsgInfo("The user is not Register on Group!");
+                return;
+            }
+
             Intent messages = new Intent(ActivityGroups.this, ActivityMessages.class);
             Bundle msg = new Bundle();
 
-            msg.putString(GROUPVALUE, group);
+            msg.putString(GROUPVALUE, this.group.getName());
+            msg.putString(ActivityLogin.UID, ActivityGroups.this.user.getUid());
+            msg.putString(ActivityLogin.EMAIL, ActivityGroups.this.user.getEmail());
             messages.putExtras(msg);
             startActivity(messages);
         }
+    }
+
+    private class GroupAction implements View.OnClickListener {
+
+        private Group group;
+
+        GroupAction(Group group) {
+            this.group = group;
+        }
+
+        @Override
+        public void onClick(View view) {
+            if (this.group.isRegister(ActivityGroups.this.user.getUid())) {
+                this.group.exitGroup(ActivityGroups.this.database, ActivityGroups.this.user);
+                return;
+            }
+
+            if (this.group.sizeUsers() < MAXUSERS) {
+                this.group.insertInGroup(ActivityGroups.this.database, ActivityGroups.this.user);
+            } else {
+                showMsgInfo("Max users on the Group!");
+            }
+        }
+    }
+
+    private void showMsgInfo(String text) {
+        int time = Toast.LENGTH_SHORT;
+
+        Toast msg = Toast.makeText(this, text, time);
+        msg.show();
     }
 }

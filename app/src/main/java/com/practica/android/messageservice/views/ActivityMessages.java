@@ -21,19 +21,22 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.practica.android.messageservice.R;
 import com.practica.android.messageservice.entities.Message;
+import com.practica.android.messageservice.entities.User;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class ActivityMessages extends AppCompatActivity {
+    public static final String PATHMESSAGES = "/messages/";
 
     private static final String TAG = ActivityMessages.class.getSimpleName();
-    private static final String PATHMESSAGES = "/Messages/";
     private static final FirebaseDatabase database = FirebaseDatabase.getInstance();
+    private static final float SIZETEXT = 24;
 
     private TableLayout tableMessages;
     private String group;
+    private User user;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -44,14 +47,16 @@ public class ActivityMessages extends AppCompatActivity {
         if (bundle == null) {
             return;
         }
-        group = bundle.getString(ActivityGroups.GROUPVALUE);
-        tableMessages = findViewById(R.id.table_messages);
+
+        this.group = bundle.getString(ActivityGroups.GROUPVALUE);
+        this.user = new User(bundle.getString(ActivityLogin.EMAIL), bundle.getString(ActivityLogin.UID));
+        this.tableMessages = findViewById(R.id.table_messages);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         setButtonWriteMessage();
-        setViewGroup(group);
+        setViewGroup();
     }
 
     private void setButtonWriteMessage() {
@@ -77,11 +82,8 @@ public class ActivityMessages extends AppCompatActivity {
     }
 
     private void sendMessageFirebase(String text) {
-        Message message = new Message(text);
-        final String path = ActivityGroups.PATHGROUPS + group + PATHMESSAGES;
-
-        DatabaseReference messagesGroupRef = database.getReference(path + String.valueOf(message.getTime()));
-        messagesGroupRef.setValue(message);
+        Message message = new Message(this.user.getEmail(), text);
+        message.writeMessage(database, this.group);
     }
 
     private void setKeyboardAutomatic(EditText editText) {
@@ -100,8 +102,8 @@ public class ActivityMessages extends AppCompatActivity {
         }
     }
 
-    private void setViewGroup(String group) {
-        final String path = ActivityGroups.PATHGROUPS + group + PATHMESSAGES;
+    private void setViewGroup() {
+        final String path = ActivityGroups.PATHGROUPS + this.group + PATHMESSAGES;
 
         DatabaseReference groupRef = database.getReference(path);
         ValueEventListener postListener = new ValueEventListener() {
@@ -138,7 +140,6 @@ public class ActivityMessages extends AppCompatActivity {
                 Message message = dataSnapshot.getValue(Message.class);
 
                 if (message != null) {
-                    message.setTime(Long.valueOf(dataSnapshot.getKey()));
                     setViewMessage(message);
                 }
             }
@@ -159,7 +160,7 @@ public class ActivityMessages extends AppCompatActivity {
 
         row.setLayoutParams(rows);
         row.addView(getTextMessage(message));
-        tableMessages.addView(row);
+        this.tableMessages.addView(row);
     }
 
     private TextView getTextMessage(Message message) {
@@ -169,7 +170,8 @@ public class ActivityMessages extends AppCompatActivity {
                 TableRow.LayoutParams.WRAP_CONTENT, 1);
 
         msg.setLayoutParams(buttons);
-        msg.setText(message.getFormatMessage());
+        msg.setTextSize(SIZETEXT);
+        msg.setText(message.toString());
         return msg;
     }
 }

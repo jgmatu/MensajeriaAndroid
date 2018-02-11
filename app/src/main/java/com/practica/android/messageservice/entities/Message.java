@@ -1,11 +1,14 @@
 package com.practica.android.messageservice.entities;
 
 
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.Exclude;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.IgnoreExtraProperties;
+import com.practica.android.messageservice.views.ActivityGroups;
+import com.practica.android.messageservice.views.ActivityMessages;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,40 +20,32 @@ import lombok.Setter;
 @IgnoreExtraProperties
 public class Message {
     private String text;
-    private String user;
+    private String email;
     private long time;
 
-    public Message() {
+    Message() {
         ;
     }
 
-    public Message (String text) {
+    public Message (String email, String text) {
         this.text = text;
-        time = Calendar.getInstance().getTimeInMillis();
-        this.user = "Jaime";
+        this.time = Calendar.getInstance().getTimeInMillis();
+        this.email = email;
     }
 
-    @Exclude
-    public Map<String, Object> toMap() {
-        HashMap<String, Object> result = new HashMap<>();
+    public void writeMessage(FirebaseDatabase database, String group) {
+        DatabaseReference messagesGroupRef = database.getReference(ActivityGroups.PATHGROUPS + group + ActivityMessages.PATHMESSAGES);
 
-        result.put("text", this.text);
-        result.put("time", this.time);
-        result.put("user", this.user);
-        return result;
+        messagesGroupRef.push().setValue(this);
     }
 
-    public String getFormatMessage() {
+    @Override
+    public String toString() {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(this.time);
         int hour = calendar.get(Calendar.HOUR);
         int min = calendar.get(Calendar.MINUTE);
 
-        return String.format("%s: %s %d:%d", this.text, this.user, hour, min);
-    }
-
-    @Override
-    public String toString() {
-        return String.format("Text : %s\n User : %s\n Time : %d\n", this.text, this.user, this.time);
+        return String.format("%s: %s %02d:%02d", this.text, this.email, hour, min);
     }
 }
