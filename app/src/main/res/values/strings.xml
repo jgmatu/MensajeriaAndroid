@@ -4,6 +4,16 @@
     <string name="activity_groups">MessageService</string>
     <string name="action_settings">Settings</string>
 
-    <string name="ok">Fire!</string>
+    <string name="ok">Create Group</string>
     <string name="cancel">Cancel</string>
+
+    <string name="gallery"> Gallery </string>
+    <string name="camera"> Camera </string>
+
+    <string name="facebook_application_id" translatable="false">1675989509091145</string>
+    <string name="facebook_login_protocol_scheme" translatable="false">fb1675989509091145</string>
+
+    <string name="twitter_consumer_key" translatable="false">sGgGQyfLRjl6ybu97BTv4ZhsU</string>
+    <string name="twitter_consumer_secret" translatable="false">9rsn6Swq3YZjv9hyTp2yNHwdRnvMnZ0JgRlMmEXgY1EN6BSgta</string>
+
 </resources>

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -21,6 +22,7 @@ public class ActivityLogin extends AppCompatActivity {
     public static final String EMAIL = "email";
 
     private static final int RC_SIGN_IN = 123;
+    private static final String TAG = ActivityLogin.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +42,11 @@ public class ActivityLogin extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        return item.getItemId() == R.id.action_settings || super.onOptionsItemSelected(item);
+
+        if (item.getItemId() == R.id.action_settings) {
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -58,20 +64,22 @@ public class ActivityLogin extends AppCompatActivity {
             }
             groups.putExtra(UID, firebaseAuth.getCurrentUser().getUid());
             runActivityGroups(groups);
+        } else {
+            setFirebaseUIAuth();
         }
-        setFirebaseUIAuth();
     }
 
     private void setFirebaseUIAuth() {
         startActivityForResult(
                 AuthUI.getInstance()
                         .createSignInIntentBuilder()
-                        .setIsSmartLockEnabled(true)
+                        .setIsSmartLockEnabled(false)
                         .setTheme(R.style.AppTheme)
                         .setAvailableProviders(Arrays.asList(
                                 new AuthUI.IdpConfig.EmailBuilder().build(),
-                                new AuthUI.IdpConfig.PhoneBuilder().build(),
-                                new AuthUI.IdpConfig.GoogleBuilder().build()))
+                                    new AuthUI.IdpConfig.GoogleBuilder().build(),
+                                new AuthUI.IdpConfig.FacebookBuilder().build(),
+                                new AuthUI.IdpConfig.TwitterBuilder().build()))
                         .build(),
                 RC_SIGN_IN);
     }

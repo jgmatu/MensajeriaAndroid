@@ -87,8 +87,7 @@ public class ActivityGroups extends AppCompatActivity {
                 ArrayList<Group> groups = new ArrayList<>();
 
                 for (DataSnapshot groupSnapshot : dataSnapshot.getChildren()) {
-                    Group group = groupSnapshot.getValue(Group.class);
-                    groups.add(group);
+                    groups.add(groupSnapshot.getValue(Group.class));
                 }
                 setViewGroups(groups);
             }
@@ -106,7 +105,7 @@ public class ActivityGroups extends AppCompatActivity {
         TableLayout.LayoutParams rows = new TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, 0,
                 1.0f / (float) groups.size());
-        
+
         rows.setMargins(MARGINROWS, MARGINROWS, MARGINROWS, MARGINROWS);
         tableLayout.removeAllViews();
         for (Group group : groups) {
@@ -182,12 +181,12 @@ public class ActivityGroups extends AppCompatActivity {
         @Override
         public void onClick(View view) {
             if (this.group.isRegister(ActivityGroups.this.user.getUid())) {
-                this.group.exitGroup(ActivityGroups.this.database, ActivityGroups.this.user);
+                this.group.exit(ActivityGroups.this.database, ActivityGroups.this.user);
                 return;
             }
 
-            if (this.group.sizeUsers() < MAXUSERS) {
-                this.group.insertInGroup(ActivityGroups.this.database, ActivityGroups.this.user);
+            if (this.group.size() < MAXUSERS) {
+                this.group.insert(ActivityGroups.this.database, ActivityGroups.this.user);
             } else {
                 showMsgInfo("Max users on the Group!");
             }

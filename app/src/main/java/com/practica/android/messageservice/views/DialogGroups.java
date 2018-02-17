@@ -36,7 +36,6 @@ class DialogGroups {
 
         builder.setTitle("Fire Missiles");
         builder.setView(nameGroup);
-
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 String name = nameGroup.getText().toString();
@@ -59,7 +58,9 @@ class DialogGroups {
         ValueEventListener postListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                checkFirebaseGroup(dataSnapshot, name);
+                if (isValidFirebaseGroup(dataSnapshot, name)) {
+                    createGroup(name);
+                }
             }
 
             @Override
@@ -70,20 +71,18 @@ class DialogGroups {
         groupsRef.addValueEventListener(postListener);
     }
 
-    private void checkFirebaseGroup(DataSnapshot dataSnapshot, String name) {
-
+    private boolean isValidFirebaseGroup(DataSnapshot dataSnapshot, String name) {
+        if (name.matches("\\.\\#\\$\\,\\ \\[\\]")) {
+            showMsgInfo("El nombre del grupo no es válido");
+            return false;
+        }
         for (DataSnapshot groupSnapshot: dataSnapshot.getChildren()) {
             if (groupSnapshot.getKey().equals(name)) {
                 showMsgInfo("El grupo ya está creado");
-                return;
+                return false;
             }
         }
-
-        if (name.matches("\\.\\#\\$\\,\\ \\[\\]")) {
-            showMsgInfo("El nombre del grupo no es válido");
-            return;
-        }
-        createGroup(name);
+        return true;
     }
 
     private void createGroup(String nameGroup) {

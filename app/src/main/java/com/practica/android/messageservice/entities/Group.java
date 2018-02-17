@@ -17,7 +17,6 @@ public class Group {
     private HashMap<String, Message> messages;
     private HashMap<String, User> users;
 
-
     Group() {
         this.name = "errorGroup";
         this.users = new HashMap<>();
@@ -35,17 +34,17 @@ public class Group {
         return users.containsKey(uid);
     }
 
-    public int sizeUsers() {
+    public int size() {
         return this.users.size();
     }
 
-    public void insertInGroup(FirebaseDatabase database, User user) {
+    public void insert(FirebaseDatabase database, User user) {
         DatabaseReference userRef = database.getReference(ActivityGroups.PATHGROUPS + this.name + "/users/" + user.getUid());
 
         userRef.setValue(new User(user.getEmail(), user.getUid()));
     }
 
-    public void exitGroup(FirebaseDatabase database, User user) {
+    public void exit(FirebaseDatabase database, User user) {
         DatabaseReference userRef = database.getReference(ActivityGroups.PATHGROUPS + this.name + "/users/" + user.getUid());
 
         userRef.setValue(null);
@@ -60,7 +59,7 @@ public class Group {
         }
         format.append("\n\n");
         for (String keyMsg: messages.keySet()) {
-            format.append(String.format("Key Message : %s\n", keyMsg));
+            format.append(String.format("Key ImageMessage : %s\n", keyMsg));
         }
         return format.toString();
     }
