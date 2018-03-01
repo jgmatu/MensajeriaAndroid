@@ -5,6 +5,6 @@ import com.google.firebase.database.DatabaseError;
 
 public interface OnGetAllDataMessages {
     void onStart();
-    void onSuccess(ImageMessages messageData);
+    void onSuccess();
     void onFailed(DatabaseError databaseError);
 }

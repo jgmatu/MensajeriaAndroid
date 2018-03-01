@@ -34,9 +34,9 @@ class DialogGroups {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         final EditText nameGroup = new EditText(activity);
 
-        builder.setTitle("Fire Missiles");
+        builder.setTitle("Create Group");
         builder.setView(nameGroup);
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.create, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 String name = nameGroup.getText().toString();
                 queryGroupInFirebase(name);

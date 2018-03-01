@@ -48,6 +48,16 @@ public class Group {
         DatabaseReference userRef = database.getReference(ActivityGroups.PATHGROUPS + this.name + "/users/" + user.getUid());
 
         userRef.setValue(null);
+        this.users.remove(user.getUid());
+        eraseGroup(database);
+    }
+
+    private void eraseGroup(FirebaseDatabase database) {
+        DatabaseReference groupRef = database.getReference(ActivityGroups.PATHGROUPS + this.name);
+
+        if (this.users.isEmpty()) {
+            groupRef.setValue(null);
+        }
     }
 
     @Override

@@ -2,30 +2,36 @@ package com.practica.android.messageservice.tasks;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.support.annotation.NonNull;
-import android.util.Log;
+import android.support.design.widget.FloatingActionButton;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.practica.android.messageservice.R;
+import com.practica.android.messageservice.entities.Message;
+import com.practica.android.messageservice.views.ActivityGroups;
 import com.practica.android.messageservice.views.ActivityMessages;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 import java.util.SortedSet;
 
 
@@ -33,20 +39,58 @@ public class ManagementMessages {
 
     private static final String TAG = ManagementMessages.class.getSimpleName();
     private ActivityMessages activity;
-    private String path;
-    private ImageMessages imageMessages;
 
-    private int readMessages = 0;
-    private int sizeMessagesImage = 0;
-
-    public ManagementMessages (ActivityMessages activity, String path) {
+    public ManagementMessages (ActivityMessages activity) {
         this.activity = activity;
-        this.path = path;
-        this.imageMessages = new ImageMessages();
+    }
+    private int downloadImages;
+
+    public void sendMessageAndImage(Message message, Bitmap bitmap, String group) {
+        String path = ActivityGroups.PATHGROUPS + group + ActivityMessages.PATHMESSAGES;
+        DatabaseReference messagesGroupRef = FirebaseDatabase.getInstance().getReference(path);
+
+        // Obtain new key to new message...
+        message.setKey(messagesGroupRef.push().getKey());
+        DatabaseReference msgRef = FirebaseDatabase.getInstance().getReference(path + "/"  + message.getKey());
+
+        if (bitmap != null && bitmap.isMutable()) {
+            setUrlMessageAndUploadImage(bitmap, message, msgRef);
+        } else {
+            msgRef.setValue(message);
+        }
     }
 
-    public void setViewAllMessagesSorted(List<String> messages) {
-        getAllMessages(new OnGetAllDataMessages() {
+    private void setUrlMessageAndUploadImage(Bitmap bitmap,final Message message, final DatabaseReference msgRef) {
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
+        StorageReference imagesReference = storageRef.child(message.getKey());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+        byte[] data = baos.toByteArray();
+
+        UploadTask uploadTask = imagesReference.putBytes(data);
+
+        // Handle unsuccessful uploads.
+        uploadTask.addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                ;
+            }
+        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Uri downloadUrl = taskSnapshot.getDownloadUrl();
+
+                if (downloadUrl != null) {
+                    message.setUrl(downloadUrl.toString());
+                    msgRef.setValue(message);
+                }
+            }
+        });
+    }
+
+    public void setAllViewsAllMessagesSorted(SortedSet<Message> messages) {
+        setImagesMessages(new OnGetAllDataMessages() {
 
             @Override
             public void onStart() {
@@ -54,16 +98,17 @@ public class ManagementMessages {
             }
 
             @Override
-            public void onSuccess(ImageMessages imageMessages) {
-                TableLayout table = activity.findViewById(R.id.table_messages);
-                SortedSet<ImageMessage> sorted = imageMessages.getSorted();
+            public void onSuccess() {
+                ProgressBar loadImages = activity.findViewById(R.id.progress_msg);
+                loadImages.setVisibility(View.INVISIBLE);
+                loadImages.setLayoutParams(new LinearLayout.LayoutParams(0, 0, 0));
 
-                for (ImageMessage imageMessage : sorted) {
-                    setTableTextMessage(table, imageMessage.getMessage());
-                    if (imageMessage.getBitmap() != null) {
-                        setTableImage(table, imageMessage.getBitmap());
-                    }
-                }
+                ScrollView viewMessages = activity.findViewById(R.id.view_messages);
+                viewMessages.setVisibility(View.VISIBLE);
+                viewMessages.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 0.8f));
+
+                FloatingActionButton writeMessages = activity.findViewById(R.id.write_message);
+                writeMessages.setVisibility(View.VISIBLE);
             }
 
             @Override
@@ -73,164 +118,95 @@ public class ManagementMessages {
         }, messages);
     }
 
-    private void getAllMessages(final OnGetAllDataMessages listener, List<String> messages) {
-        listener.onStart();
+    private void setImagesMessages (final OnGetAllDataMessages listener, SortedSet<Message> messages) {
+        final int sizeMessagesImage = getNumImagesMessages(messages);
 
-        mReadDataOnce(new OnGetAllDataMessages() {
-
-            @Override
-            public void onStart() {
-                ;
-            }
-
-            @Override
-            public void onSuccess(ImageMessages imageMessages) {
-                getImagesMessages(new OnGetAllDataMessages() {
-                    @Override
-                    public void onStart() {
-                        ;
-                    }
-
-                    @Override
-                    public void onSuccess(ImageMessages imageMessages) {
-                        listener.onSuccess(imageMessages);
-                    }
-
-                    @Override
-                    public void onFailed(DatabaseError databaseError) {
-                        Log.e(TAG, "Failed images imageMessages...");
-                    }
-                });
-            }
-
-            @Override
-            public void onFailed(DatabaseError databaseError) {
-                Log.e(TAG, "Failed ImageMessages Meta data...");
-            }
-        }, messages);
-    }
-
-    private void getImagesMessages (final OnGetAllDataMessages listener) {
-        listener.onStart();
-
-        sizeMessagesImage = imageMessages.getNumMessagesImage();
         if (sizeMessagesImage == 0) {
-            listener.onSuccess(imageMessages);
+            listener.onSuccess();
             return;
         }
 
-        readMessages = 0;
-        for (final Map.Entry<String, ImageMessage> entry : imageMessages.getMap().entrySet()) {
-            final ImageMessage imageMessage = entry.getValue();
-
-            if (imageMessage.getUrl().equals("")) {
-                continue;
-            }
-
-            StorageReference httpsReference = FirebaseStorage.getInstance().getReferenceFromUrl(imageMessage.getUrl());
-            try {
-                final File localFile = File.createTempFile("Images", "bmp");
-
-                httpsReference.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot >() {
-                    @Override
-                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                        Bitmap image = BitmapFactory.decodeFile(localFile.getAbsolutePath());
-                        imageMessages.get(entry.getKey()).setBitmap(image);
-
-                        if (readMessages == sizeMessagesImage - 1) {
-                            listener.onSuccess(ManagementMessages.this.imageMessages);
-                        } else {
-                            readMessages++;
-                        }
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
+        for (final Message message : messages) {
+            if (!message.getUrl().equals("")) {
+                downloadImage(listener, message, sizeMessagesImage);
             }
         }
     }
 
+    private void downloadImage(final OnGetAllDataMessages listener, final Message message, final int numImages) {
+        StorageReference httpsReference = FirebaseStorage.getInstance().getReferenceFromUrl(message.getUrl());
 
-    private void mReadDataOnce(final OnGetAllDataMessages listener, final List<String> messages) {
-        listener.onStart();
+        try {
+            final File localFile = File.createTempFile("Images", "bmp");
 
-        readMessages = 0;
-        for (final String msg : messages) {
-            FirebaseDatabase.getInstance().getReference(path + msg).addListenerForSingleValueEvent(new ValueEventListener() {
+            httpsReference.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot >() {
                 @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    com.practica.android.messageservice.entities.Message message = dataSnapshot.getValue(com.practica.android.messageservice.entities.Message.class);
+                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                    Bitmap image = BitmapFactory.decodeFile(localFile.getAbsolutePath());
+                    ImageView imageView = searchImageView(message.getKey());
 
-                    if (isNewActivityMessage(message)) {
-                        activity.addMessage(message);
-                        ManagementMessages.this.imageMessages.put(msg, new ImageMessage(message));
+                    if (imageView != null) {
+                        imageView.setImageBitmap(image);
                     }
 
-                    if (readMessages == messages.size() - 1) {
-                        listener.onSuccess(ManagementMessages.this.imageMessages);
+                    if (downloadImages == numImages - 1) {
+                        listener.onSuccess();
                     } else {
-                        readMessages++;
+                        downloadImages++;
                     }
                 }
+            }).addOnFailureListener(new OnFailureListener() {
 
                 @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    listener.onFailed(databaseError);
+                public void onFailure(@NonNull Exception e) {
+                    Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
                 }
+
             });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private boolean isNewActivityMessage(com.practica.android.messageservice.entities.Message message) {
-        return message != null && !activity.isExistMessage(message);
+    private int  getNumImagesMessages(SortedSet<Message> messages) {
+        int numImages = 0;
+
+        for (Message message : messages) {
+            if (!message.getUrl().equals("")) {
+                numImages++;
+            }
+        }
+        return numImages;
     }
 
-    private void setTableImage(TableLayout table, Bitmap image) {
-        TableRow row = getRow();
+    private ImageView searchImageView(String key) {
+        TableLayout table = activity.findViewById(R.id.table_messages);
+        ImageView imageView = null;
+        int length = table.getChildCount();
 
-        row.addView(getImageMessage(image));
-        table.addView(row);
-    }
+        for(int i = 0; i < length; i++) {
+            View view = table.getChildAt(i);
 
-    private ImageView getImageMessage(Bitmap image) {
-        ImageView imageView = new ImageView(activity);
+            if (view instanceof TableRow) {
+                TableRow row = (TableRow) view;
+                View viewMsg = row.getChildAt(0);
 
-        imageView.setLayoutParams(new TableRow.LayoutParams(512, 512));
-        imageView.setImageBitmap(image);
+                String tag = getTag(viewMsg.getTag());
+                if(viewMsg instanceof ImageView && tag.equals(key)) {
+                    imageView = (ImageView) viewMsg;
+                    return imageView;
+                }
+            }
+        }
         return imageView;
     }
 
-    private void setTableTextMessage(TableLayout table, com.practica.android.messageservice.entities.Message message) {
-        TableRow row = getRow();
+    private String getTag(Object o) {
+        String tag = "";
 
-        row.addView(getTextMessage(message));
-        table.addView(row);
-    }
-
-    private TableRow getRow() {
-        TableRow row = new TableRow(activity);
-        TableLayout.LayoutParams rows = new TableLayout.LayoutParams(
-                TableLayout.LayoutParams.MATCH_PARENT,
-                TableLayout.LayoutParams.WRAP_CONTENT);
-
-        row.setLayoutParams(rows);
-        return row;
-    }
-
-    private TextView getTextMessage(com.practica.android.messageservice.entities.Message message) {
-        TextView msg = new TextView(activity);
-        TableRow.LayoutParams buttons = new TableRow.LayoutParams(
-                TableRow.LayoutParams.MATCH_PARENT,
-                TableRow.LayoutParams.WRAP_CONTENT, 1);
-
-        msg.setLayoutParams(buttons);
-        msg.setTextSize(ActivityMessages.SIZETEXT);
-        msg.setText(message.toString());
-        return msg;
+        if (o instanceof String) {
+            tag = (String) o;
+        }
+        return tag;
     }
 }

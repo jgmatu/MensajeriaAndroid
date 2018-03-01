@@ -18,6 +18,7 @@ import com.practica.android.messageservice.views.ActivityGroups;
 import com.practica.android.messageservice.views.ActivityMessages;
 
 import java.io.ByteArrayOutputStream;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 import lombok.Getter;
@@ -26,18 +27,20 @@ import lombok.Setter;
 @Getter
 @Setter
 @IgnoreExtraProperties
-public class Message {
+public class Message implements  Comparable {
     private static final String TAG = Message.class.getSimpleName();
     private String text;
     private String email;
     private long time;
     private String url;
+    private String key;
 
     Message() {
         this.text = "";
         this.email = "";
         this.time = -1;
         this.url = "";
+        this.key = "";
     }
 
     public Message (String email, String text) {
@@ -45,51 +48,7 @@ public class Message {
         this.time = Calendar.getInstance().getTimeInMillis();
         this.email = email;
         this.url = "";
-    }
-
-    public void write(FirebaseDatabase database, FirebaseStorage storage, Bitmap bitmap, String group) {
-        String path = ActivityGroups.PATHGROUPS + group + ActivityMessages.PATHMESSAGES;
-        DatabaseReference messagesGroupRef = database.getReference(path);
-
-        // Obtain new key to new message...
-        String key = messagesGroupRef.push().getKey();
-        DatabaseReference msgRef = database.getReference(path + "/"  + key);
-
-        if (bitmap != null && bitmap.isMutable()) {
-            uploadImage(storage, bitmap, key, msgRef);
-        } else {
-            // The message is only text..
-            msgRef.setValue(this);
-        }
-    }
-
-    private void uploadImage(FirebaseStorage storage, Bitmap bitmap, String keyImage, final DatabaseReference msgRef) {
-        StorageReference storageRef = storage.getReference();
-        StorageReference imagesReference = storageRef.child(keyImage);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-        byte[] data = baos.toByteArray();
-
-        UploadTask uploadTask = imagesReference.putBytes(data);
-
-        // Handle unsuccessful uploads.
-        uploadTask.addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception exception) {
-                ;
-            }
-        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-            @Override
-            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                Uri downloadUrl = taskSnapshot.getDownloadUrl();
-
-                if (downloadUrl != null) {
-                    Message.this.url = downloadUrl.toString();
-                    msgRef.setValue(Message.this);
-                }
-            }
-        });
+        this.key = "";
     }
 
     @Override
@@ -108,12 +67,27 @@ public class Message {
     public String toString() {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(this.time);
-        int hour = calendar.get(Calendar.HOUR);
-        int min = calendar.get(Calendar.MINUTE);
+        SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+        StringBuilder formatMsg = new StringBuilder();
 
         if (this.url.equals("")) {
-            return String.format("Text Message : %s\n User :%s\n Time: %02d:%02d\n", this.text, this.email, hour, min);
+            formatMsg.append(String.format("Text: %s\n ", this.text));
+        } else {
+            formatMsg.append(String.format("Image: %s\n", this.text));
         }
-        return String.format("Comment Image: %s\n User :%s\n Time: %02d:%02d\n\nImage\n----------\n", this.text, this.email, hour, min);
+        formatMsg.append(String.format("User :%s Time: %s ", this.email, format.format(calendar.getTime())));
+        return formatMsg.toString();
+    }
+
+    @Override
+    public int compareTo(@NonNull Object o) {
+        if (o == this) {
+            return 0;
+        }
+        if (!(o instanceof Message)) {
+            return -1;
+        }
+        Message msg = (Message) o;
+        return (int) (this.time - msg.time);
     }
 }
