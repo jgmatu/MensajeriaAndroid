@@ -75,7 +75,7 @@ public class Message implements  Comparable {
         } else {
             formatMsg.append(String.format("Image: %s\n", this.text));
         }
-        formatMsg.append(String.format("User :%s Time: %s ", this.email, format.format(calendar.getTime())));
+        formatMsg.append(String.format("User :%s\nTime: %s\n", this.email, format.format(calendar.getTime())));
         return formatMsg.toString();
     }
 
